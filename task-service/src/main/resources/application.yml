@@ -1,0 +1,50 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: task-service
+  datasource:
+    url: jdbc:sqlserver://100.76.67.76:30216;databaseName=master;user=sa;password=P@ssw0rd1234;encrypt=false;trustServerCertificate=true;loginTimeout=30;
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  data:
+    redis:
+      host: 100.76.67.76
+      port: 30217
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: 100.76.67.76:30218
+      bindings:
+        taskEvents-out-0:
+          destination: task-topic
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://100.76.67.76:30219/api/v2/spans
+
+springdoc:
+  swagger-ui:
+    config-url: /api/tasks/v3/api-docs/swagger-config
+    url: /api/tasks/v3/api-docs
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG

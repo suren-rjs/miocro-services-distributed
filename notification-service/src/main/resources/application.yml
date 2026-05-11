@@ -1,0 +1,48 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: notification-service
+  data:
+    redis:
+      host: 100.76.67.76
+      port: 30217
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: 100.76.67.76:30218
+      bindings:
+        taskEvents-in-0:
+          destination: task-topic
+          group: notification-group
+
+resilience4j:
+  retry:
+    instances:
+      emailService:
+        maxAttempts: 3
+        waitDuration: 2s
+        retryExceptions:
+          - java.lang.RuntimeException
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://100.76.67.76:30219/api/v2/spans
+
+springdoc:
+  swagger-ui:
+    config-url: /api/notifications/v3/api-docs/swagger-config
+    url: /api/notifications/v3/api-docs
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always

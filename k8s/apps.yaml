@@ -1,0 +1,173 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+spec:
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+      - name: api-gateway
+        image: local/api-gateway:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 9090
+        env:
+        - name: SPRING_CLOUD_GATEWAY_ROUTES_0_ID
+          value: "task-service"
+        - name: SPRING_CLOUD_GATEWAY_ROUTES_0_URI
+          value: "http://task-service:8081"
+        - name: SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0
+          value: "Path=/api/tasks/**"
+        - name: SPRING_CLOUD_GATEWAY_ROUTES_1_ID
+          value: "notification-service"
+        - name: SPRING_CLOUD_GATEWAY_ROUTES_1_URI
+          value: "http://notification-service:8082"
+        - name: SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0
+          value: "Path=/api/notifications/**"
+        - name: SPRING_CLOUD_GATEWAY_ROUTES_2_ID
+          value: "frontend"
+        - name: SPRING_CLOUD_GATEWAY_ROUTES_2_URI
+          value: "http://frontend:80"
+        - name: SPRING_CLOUD_GATEWAY_ROUTES_2_PREDICATES_0
+          value: "Path=/**"
+        - name: SPRING_DATA_REDIS_HOST
+          value: "100.76.67.76"
+        - name: SPRING_DATA_REDIS_PORT
+          value: "30217"
+        - name: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT
+          value: "http://100.76.67.76:30219/api/v2/spans"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 3000
+    targetPort: 9090
+  selector:
+    app: api-gateway
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task-service
+spec:
+  selector:
+    matchLabels:
+      app: task-service
+  template:
+    metadata:
+      labels:
+        app: task-service
+    spec:
+      containers:
+      - name: task-service
+        image: local/task-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8081
+        env:
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:sqlserver://100.76.67.76:30216;databaseName=master;user=sa;password=P@ssw0rd1234;encrypt=false;trustServerCertificate=true;loginTimeout=30;"
+        - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
+          value: "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+        - name: SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT
+          value: "org.hibernate.dialect.SQLServerDialect"
+        - name: SPRING_DATA_REDIS_HOST
+          value: "100.76.67.76"
+        - name: SPRING_DATA_REDIS_PORT
+          value: "30217"
+        - name: SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS
+          value: "100.76.67.76:30218"
+        - name: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT
+          value: "http://100.76.67.76:30219/api/v2/spans"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: task-service
+spec:
+  ports:
+  - port: 8081
+  selector:
+    app: task-service
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+      - name: notification-service
+        image: local/notification-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8082
+        env:
+        - name: SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS
+          value: "100.76.67.76:30218"
+        - name: MANAGEMENT_ZIPKIN_TRACING_ENDPOINT
+          value: "http://100.76.67.76:30219/api/v2/spans"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+spec:
+  ports:
+  - port: 8082
+  selector:
+    app: notification-service
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: local/frontend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+spec:
+  ports:
+  - port: 80
+  selector:
+    app: frontend

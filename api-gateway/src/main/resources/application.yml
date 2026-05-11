@@ -1,0 +1,58 @@
+server:
+  port: 9090
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: task-service
+          uri: http://127.0.0.1:8081
+          order: -1
+          predicates:
+            - Path=/api/tasks/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                key-resolver: "#{@userKeyResolver}"
+        - id: notification-service
+          uri: http://127.0.0.1:8082
+          order: 0
+          predicates:
+            - Path=/api/notifications/**
+        - id: frontend
+          uri: http://127.0.0.1:5173
+          order: 10
+          predicates:
+            - Path=/**
+          filters:
+            - name: PreserveHostHeader
+
+  data:
+    redis:
+      host: 100.76.67.76
+      port: 30217
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://100.76.67.76:30219/api/v2/spans
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    org.springframework.cloud.gateway: TRACE
+    org.springframework.http.server.reactive: DEBUG
+    org.springframework.web.server.adapter.HttpWebHandlerAdapter: DEBUG
