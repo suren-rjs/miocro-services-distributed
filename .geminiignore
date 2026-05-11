@@ -1,0 +1,16 @@
+# Build artifacts
+target/
+dist/
+node_modules/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# Logs
+*.log
+logs/
+
+# Git
+.git/
